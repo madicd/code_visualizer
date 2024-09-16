@@ -3,6 +3,9 @@ description: Visualizes size and change frequency of Dart classes in your codeba
 version: 1.0.0
 repository: https://github.com/madicd/code_visualizer
 
+executables:
+    code_visualizer:
+
 environment:
   sdk: ^3.4.3
 
