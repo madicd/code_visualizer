@@ -1,6 +1,6 @@
 name: code_visualizer
 description: Visualizes size and change frequency of Dart classes in your codebase.
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/madicd/code_visualizer
 
 executables:
@@ -10,9 +10,8 @@ environment:
   sdk: ^3.4.3
 
 dependencies:
-  analyzer: ^6.5.0
+  analyzer: ^6.8.0
   path: ^1.9.0
 
 dev_dependencies:
-  lints: ^3.0.0
-  test: ^1.24.0
+  lints: ^4.0.0
