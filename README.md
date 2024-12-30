@@ -27,6 +27,8 @@ cp <CODE_VISUALIZER_PATH>/index.html . # copy index.html next to code_model.json
 
 Now open index.html with LiveServer VSCode extension, or any local server that can serve both index.html and code_model.json.
 
+index.html imports code_model.json and visualizes it using (D3.js)[https://d3js.org/].
+
 # Limitations
 
 * It only supports Git repositories. Other version control systems are not supported.
