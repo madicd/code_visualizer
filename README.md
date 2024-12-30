@@ -18,20 +18,14 @@ This is inspired by the book [Your Code as a Crime Scene](https://learning.oreil
 Run instructions:
 
 ```bash
-dart run bin/code_visualizer.dart <path-to-directory>
+git clone https://github.com/madicd/code_visualizer.git
+dart pub global activate -spath code_visualizer
+cd <APP_TO_ANALYZE_PATH>
+code_visualizer lib # generates code_model.json
+cp <CODE_VISUALIZER_PATH>/index.html . # copy index.html next to code_model.json so you can visualize it
 ```
 
-Output is `code_model.json` in the root of `code_visualizer` directory.
-The JSON is visualized by `index.html` in the root of `code_visualizer` directory.
-
-`index.html` has to be open using a server. For example, using built-in server of Android Studio,
-Live Server extension of VSCode or `http-server` npm package.
-
-For example, running it against the [Flutter codebase](https://github.com/flutter/flutter/tree/master/packages/flutter/lib):
-```bash
-dart run .\bin\code_visualizer.dart ..\flutter\packages\flutter\lib\
-```
-Example outputs can be found in `example` directory.
+Now open index.html with LiveServer VSCode extension, or any local server that can serve both index.html and code_model.json.
 
 # Limitations
 
