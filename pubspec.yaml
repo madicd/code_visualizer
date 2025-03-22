@@ -7,10 +7,10 @@ executables:
     code_visualizer:
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.0
 
 dependencies:
-  analyzer: ^7.1.0
+  analyzer: ^7.3.0
   path: ^1.9.1
 
 dev_dependencies:
