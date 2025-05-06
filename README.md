@@ -25,13 +25,11 @@ Run instructions:
 git clone https://github.com/madicd/code_visualizer.git
 dart pub global activate -spath code_visualizer
 cd <APP_TO_ANALYZE_PATH>
-code_visualizer lib # generates code_model.json
-cp <CODE_VISUALIZER_PATH>/index.html . # copy index.html next to code_model.json so you can visualize it
+code_visualizer lib # generates self-contained index.html
+open index.html
 ```
 
-Now open index.html with LiveServer VSCode extension, or any local server that can serve both index.html and code_model.json.
-
-index.html imports code_model.json and visualizes it using [D3.js](https://d3js.org/).
+Now open index.html in your browser to see the visualization. The file is self-contained and includes all necessary data and visualization code.
 
 # Limitations
 

@@ -12,11 +12,12 @@ class ClassModel {
   final int methodCount;
   final int commitCount; // Number of commits in the past 3 months
 
-  ClassModel(
-      {required this.className,
-      required this.linesOfCode,
-      required this.methodCount,
-      required this.commitCount});
+  ClassModel({
+    required this.className,
+    required this.linesOfCode,
+    required this.methodCount,
+    required this.commitCount,
+  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -34,9 +35,7 @@ class CodeModel {
   CodeModel({required this.classModels});
 
   Map<String, dynamic> toJson() {
-    return {
-      'classModels': classModels.map((model) => model.toJson()).toList(),
-    };
+    return {'classModels': classModels.map((model) => model.toJson()).toList()};
   }
 }
 
@@ -53,11 +52,14 @@ class ClassVisitor extends GeneralizingAstVisitor<void> {
     final linesOfCode = _countLinesOfCode(node);
     final methodCount = node.members.whereType<MethodDeclaration>().length;
 
-    classModels.add(ClassModel(
+    classModels.add(
+      ClassModel(
         className: className,
         linesOfCode: linesOfCode,
         methodCount: methodCount,
-        commitCount: commitCount));
+        commitCount: commitCount,
+      ),
+    );
     super.visitClassDeclaration(node);
   }
 
@@ -67,17 +69,14 @@ class ClassVisitor extends GeneralizingAstVisitor<void> {
 }
 
 Map<String, int> getCommitCounts(String directoryPath) {
-  final result = Process.runSync(
-      'git',
-      [
-        'log',
-        '--since="3 months ago"',
-        '--pretty=format:',
-        '--name-only',
-        '--diff-filter=AM',
-        '--no-merges'
-      ],
-      workingDirectory: directoryPath);
+  final result = Process.runSync('git', [
+    'log',
+    '--since="3 months ago"',
+    '--pretty=format:',
+    '--name-only',
+    '--diff-filter=AM',
+    '--no-merges',
+  ], workingDirectory: directoryPath);
 
   if (result.exitCode != 0) {
     return {};
@@ -98,8 +97,10 @@ Map<String, int> getCommitCounts(String directoryPath) {
 }
 
 String getGitRootDirectory(String directoryPath) {
-  final result = Process.runSync('git', ['rev-parse', '--show-toplevel'],
-      workingDirectory: directoryPath);
+  final result = Process.runSync('git', [
+    'rev-parse',
+    '--show-toplevel',
+  ], workingDirectory: directoryPath);
 
   if (result.exitCode != 0) {
     print('Error: ${result.stderr}');
@@ -150,8 +151,130 @@ void main(List<String> arguments) {
   }
 
   final codeModel = CodeModel(classModels: allClassModels);
+  final jsonData = jsonEncode(codeModel);
 
-  File('code_model.json').writeAsStringSync(jsonEncode(codeModel));
+  // Generate self-contained index.html
+  final indexHtml = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Tree Map Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body, html {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        .node {
+          stroke: #fff;
+          stroke-width: 1px;
+          fill-opacity: 0.9;
+        }
+        .tooltip {
+          position: absolute;
+          text-align: center;
+          padding: 5px;
+          font: 12px sans-serif;
+          background: lightsteelblue;
+          border: 1px solid #000;
+          border-radius: 5px;
+          pointer-events: none;
+          opacity: 0;
+        }
+        svg {
+          display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="tooltip"></div>
+<svg></svg>
+<script>
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const color = d3.scaleSequential(d3.interpolateBlues)
+      .domain([0, 50]);
+
+    const tooltip = d3.select(".tooltip");
+
+    const svg = d3.select("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", \`0 0 \${width} \${height}\`)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    const g = svg.append("g").attr("class", "zoomable");
+
+    const treemap = d3.treemap()
+      .size([width, height])
+      .paddingInner(1);
+
+    // Embedded JSON data
+    const data = $jsonData;
+
+    const root = d3.hierarchy({children: data.classModels})
+      .sum(d => d.linesOfCode)
+      .sort((a, b) => b.linesOfCode - a.linesOfCode);
+
+    treemap(root);
+
+    const nodes = g.selectAll(".node")
+      .data(root.leaves())
+      .enter().append("rect")
+        .attr("class", "node")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => color(d.data.commitCount))
+        .on("mouseover", function(event, d) {
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          tooltip.html(\`Class: \${d.data.className}<br>Lines of Code: \${d.data.linesOfCode}<br>Method Count: \${d.data.methodCount}<br>Commits in last 3 months: \${d.data.commitCount}\`)
+            .style("left", (event.pageX + 5) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+
+    // Zoom and pan
+    const zoom = d3.zoom()
+      .scaleExtent([1, 10])
+      .translateExtent([[0, 0], [width, height]])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    svg.call(zoom);
+
+    // Resize the SVG element when the window is resized
+    window.addEventListener('resize', () => {
+      const newWidth = window.innerWidth;
+      const newHeight = window.innerHeight;
+      svg.attr("width", newWidth)
+         .attr("height", newHeight)
+         .attr("viewBox", \`0 0 \${newWidth} \${newHeight}\`);
+      treemap.size([newWidth, newHeight]);
+      g.selectAll(".node")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0);
+    });
+</script>
+</body>
+</html>''';
+
+  File('index.html').writeAsStringSync(indexHtml);
   print(
-      'Code model saved to code_model.json after ${stopwatch.elapsedMilliseconds} ms');
+    'Self-contained index.html generated after ${stopwatch.elapsedMilliseconds} ms',
+  );
 }
